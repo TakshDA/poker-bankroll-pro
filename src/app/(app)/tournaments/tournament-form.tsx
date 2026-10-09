@@ -137,7 +137,7 @@ export function TournamentForm({ values, accounts, gameTypes, venues, platforms 
   });
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-5 lg:grid-cols-[1fr_320px]" noValidate>
+    <form onSubmit={onSubmit} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]" noValidate>
       {v.id ? <input type="hidden" name="id" value={v.id} /> : null}
       <input type="hidden" name="payload" value={payload} />
       <div className="flex flex-col gap-5">
@@ -278,7 +278,7 @@ export function TournamentForm({ values, accounts, gameTypes, venues, platforms 
                 <legend className="flex w-full items-center justify-between px-1 text-xs font-medium text-fg-muted">
                   <span>{i === 0 ? "Entry 1" : `Re-entry ${i}`}</span>
                 </legend>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_1fr_0.7fr_1fr_1fr_auto]">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-[1fr_1fr_0.7fr_1fr_1fr_auto]">
                   <Field label="Buy-in" htmlFor={`e${i}-buyIn`} error={err(`entries.${i}.buyIn`)} required>
                     <MoneyInput id={`e${i}-buyIn`} currency={currency} value={e.buyIn} onChange={setEntry(i, "buyIn")} aria-invalid={!!err(`entries.${i}.buyIn`)} />
                   </Field>
@@ -352,7 +352,7 @@ export function TournamentForm({ values, accounts, gameTypes, venues, platforms 
             {v.periods.map((p, i) => {
               const mins = spanMinutes(p);
               return (
-                <div key={i} className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-surface-2/40 p-3 sm:grid-cols-[0.8fr_1.1fr_0.8fr_0.8fr_0.7fr_auto]">
+                <div key={i} className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-surface-2/40 p-3 sm:grid-cols-3 xl:grid-cols-[0.8fr_1.1fr_0.8fr_0.8fr_0.7fr_auto]">
                   <Field label="Label" htmlFor={`p${i}-label`} error={err(`periods.${i}.dayLabel`)}>
                     <Input id={`p${i}-label`} value={p.dayLabel} onChange={setPeriod(i, "dayLabel")} maxLength={40} placeholder={`Day ${i + 1}`} />
                   </Field>
@@ -368,7 +368,7 @@ export function TournamentForm({ values, accounts, gameTypes, venues, platforms 
                   <Field label="Breaks (min)" htmlFor={`p${i}-brk`} error={err(`periods.${i}.breakMinutes`)}>
                     <Input id={`p${i}-brk`} type="number" inputMode="numeric" min={0} value={p.breakMinutes} onChange={setPeriod(i, "breakMinutes")} />
                   </Field>
-                  <Button type="button" variant="ghost" size="icon" className="self-start sm:mt-6" aria-label={`Remove playing day ${i + 1}`} onClick={() => setV((x) => ({ ...x, periods: x.periods.filter((_, j) => j !== i) }))}>
+                  <Button type="button" variant="ghost" size="icon" className="self-start xl:mt-6" aria-label={`Remove playing day ${i + 1}`} onClick={() => setV((x) => ({ ...x, periods: x.periods.filter((_, j) => j !== i) }))}>
                     <X />
                   </Button>
                 </div>

@@ -296,8 +296,8 @@ export function FanChart({ data, currency }: { data: { session: number; p5: numb
     <ChartFrame height={280} label="Simulated bankroll range">
       <ComposedChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
         <CartesianGrid vertical={false} />
-        <XAxis dataKey="session" {...axisProps} />
-        <YAxis {...moneyAxis(currency)} />
+        <XAxis dataKey="session" {...axisProps} minTickGap={24} />
+        <YAxis {...moneyAxis(currency)} domain={["auto", "auto"]} />
         <Tooltip
           content={({ active, payload }) =>
             active && payload?.length ? (

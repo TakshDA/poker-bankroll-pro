@@ -141,7 +141,7 @@ export function SessionForm({ values, accounts, gameTypes, venues, platforms, st
   const online = v.setting === "online";
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-5 lg:grid-cols-[1fr_320px]" noValidate>
+    <form onSubmit={onSubmit} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]" noValidate>
       {v.id ? <input type="hidden" name="id" value={v.id} /> : null}
       <div className="flex flex-col gap-5">
         <Card>

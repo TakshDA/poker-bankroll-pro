@@ -300,13 +300,13 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
 function ResultLine({ label, r, cur }: { label: string; r: { id: string; kind: string; date: string; netMinor: number; name: string | null }; cur: string }) {
   return (
     <Link href={r.kind === "cash" ? `/sessions/${r.id}` : `/tournaments/${r.id}`} className="flex items-center justify-between gap-3 hover:opacity-80">
-      <div>
+      <div className="min-w-0">
         <p className="text-xs text-fg-muted">{label}</p>
         <p className="truncate">
           {r.name ?? "Cash game"} · {shortDate(r.date)}
         </p>
       </div>
-      <Money amount={r.netMinor} currency={cur} signed className="font-semibold" />
+      <Money amount={r.netMinor} currency={cur} signed className="shrink-0 font-semibold" />
     </Link>
   );
 }
