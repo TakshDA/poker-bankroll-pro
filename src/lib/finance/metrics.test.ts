@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { account, cash, dataset, entry, expense, tournament, txn } from "./__fixtures__";
 import { resolveRange } from "./dates";
-import { computeDashboard, createContext, groupResults, summarizeTournaments } from "./metrics";
+import { buyInLevel, computeDashboard, createContext, groupResults, groupTournaments, summarizeTournaments } from "./metrics";
 import { histogram, monteCarlo, rollingAverage, streaks, varianceStats } from "./stats";
 
 const all = resolveRange("all", "America/Toronto");
@@ -174,5 +174,40 @@ describe("statistics", () => {
     expect(a!.steps.at(-1)!.session).toBe(100);
     expect(a!.steps.every((s) => s.p5 <= s.p50 && s.p50 <= s.p95)).toBe(true);
     expect(Number.isInteger(a!.finalMedianMinor)).toBe(true);
+  });
+});
+
+describe("tournament grouping", () => {
+  it("buckets face buy-ins by level using the currency's minor units", () => {
+    expect(buyInLevel(0, 2)).toBe(0);
+    expect(buyInLevel(999, 2)).toBe(0); // $9.99
+    expect(buyInLevel(1000, 2)).toBe(1); // $10
+    expect(buyInLevel(11000, 2)).toBe(3); // $110
+    expect(buyInLevel(500000, 2)).toBe(6); // $5,000
+    expect(buyInLevel(5000, 0)).toBe(6); // ¥5,000 with 0 decimals: still the top level
+  });
+
+  it("groups completed tournaments with ROI and ITM, ignoring drafts and in-progress events", () => {
+    const a = account();
+    const ds = dataset({
+      accounts: [a],
+      tournaments: [
+        tournament({ id: "t1", accountId: a.id, format: "mtt", payoutMinor: 40000 }),
+        tournament({ id: "t2", accountId: a.id, format: "mtt", payoutMinor: 0, bountiesMinor: 5000 }),
+        tournament({ id: "t3", accountId: a.id, format: "sit_and_go", payoutMinor: 0 }),
+        tournament({ id: "t4", accountId: a.id, format: "sit_and_go", status: "in_progress", payoutMinor: 0 }),
+        tournament({ id: "t5", accountId: a.id, format: "spin", status: "draft", payoutMinor: 90000 }),
+      ],
+    });
+    const ctx = createContext(ds);
+    const rows = groupTournaments(ctx.allResults, (r) => r.format);
+    const mtt = rows.find((r) => r.key === "mtt")!;
+    expect(mtt.count).toBe(2);
+    expect(mtt.cashes).toBe(1); // bounties alone are not a cash
+    expect(mtt.itmPct).toBe(50);
+    expect(mtt.netMinor).toBe(40000 + 5000 - 2 * 11000);
+    expect(mtt.roiPct).toBeCloseTo((23000 / 22000) * 100, 6);
+    expect(rows.find((r) => r.key === "sit_and_go")!.count).toBe(1);
+    expect(rows.find((r) => r.key === "spin")).toBeUndefined();
   });
 });

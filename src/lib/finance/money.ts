@@ -147,7 +147,8 @@ export function formatMoney(amount: Minor, currency: string, minorDigits = 2, op
   const fmt = new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
-    currencyDisplay: "narrowSymbol",
+    // "symbol" in en-CA keeps currencies distinct: $ (CAD), US$, A$, €…
+    currencyDisplay: "symbol",
     minimumFractionDigits: compact ? 0 : minorDigits,
     maximumFractionDigits: compact ? 1 : minorDigits,
     notation: compact ? "compact" : "standard",

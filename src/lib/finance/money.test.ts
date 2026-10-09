@@ -83,9 +83,9 @@ describe("formatting", () => {
     expect(minorToDecimal(123456)).toBe("1234.56");
     expect(minorToDecimal(1500, 0)).toBe("1500");
     expect(formatMoney(123456, "CAD")).toBe("$1,234.56");
-    expect(formatMoney(-1205, "USD")).toBe("-$12.05");
-    expect(formatMoney(1205, "USD", 2, { signed: true })).toBe("+$12.05");
-    expect(formatMoney(0, "USD", 2, { signed: true })).toBe("$0.00");
+    expect(formatMoney(-1205, "USD")).toBe("-US$12.05");
+    expect(formatMoney(1205, "USD", 2, { signed: true })).toBe("+US$12.05");
+    expect(formatMoney(0, "USD", 2, { signed: true })).toBe("US$0.00");
   });
 });
 

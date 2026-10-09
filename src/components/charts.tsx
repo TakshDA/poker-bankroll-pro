@@ -178,12 +178,21 @@ export function SignedBars({
 }
 
 /** Neutral magnitude bars (e.g. expense categories, counts). */
+export type ValueFormat = "money" | "count" | "pct" | "hours";
+function valueFormatter(f: ValueFormat, currency?: string): (v: number) => string {
+  if (f === "money") return (v) => money(v, currency ?? "CAD", { compact: true });
+  if (f === "pct") return (v) => `${v.toFixed(1)}%`;
+  if (f === "hours") return (v) => `${(v / 60).toFixed(1)}h`;
+  return (v) => v.toLocaleString("en-CA");
+}
+
 export function MagnitudeBars({
   data,
   xKey,
   valueKey,
   label,
-  format,
+  valueFormat,
+  currency,
   height,
   color = SERIES[0],
 }: {
@@ -191,10 +200,13 @@ export function MagnitudeBars({
   xKey: string;
   valueKey: string;
   label: string;
-  format: (v: number) => string;
+  /** Named, because functions cannot be passed from Server Components. */
+  valueFormat: ValueFormat;
+  currency?: string;
   height?: number;
   color?: string;
 }) {
+  const format = valueFormatter(valueFormat, currency);
   return (
     <ChartFrame height={height ?? Math.max(160, data.length * 34 + 20)} label={label}>
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>

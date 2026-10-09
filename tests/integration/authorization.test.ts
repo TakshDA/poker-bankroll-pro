@@ -8,6 +8,9 @@ import { as, closeDb, db, makeAccount, newUser } from "./helpers";
 import { loadWorkspace } from "@/lib/data/workspace";
 import { saveCashSession } from "@/lib/data/sessions";
 import { exportBackup } from "@/lib/data/backup";
+import { deleteLocalUser } from "@/lib/auth/local-store";
+import { createSql } from "@/lib/server/db";
+import { TEST_ADMIN_URL } from "./env";
 
 let alice: string;
 let bob: string;
@@ -127,4 +130,17 @@ describe("row level security", () => {
     expect(theirs.tables.sessions).toHaveLength(0);
     for (const rows of Object.values(theirs.tables)) for (const r of rows) if ("user_id" in r) expect(r.user_id).toBe(bob);
   });
+
+  it("deleting a user removes all of their data (and only theirs)", async () => {
+    const carol = await newUser();
+    const acc = await makeAccount(carol, { openingBalanceMinor: 5000 });
+    await as(carol, (tx) => saveCashSession(tx, { status: "completed", date: "2026-03-02", startTime: "19:00", endTime: "21:00", setting: "online", accountId: acc, tableFormat: "six_max", buyIn: "50", cashOut: "80" }));
+    await deleteLocalUser(db(), carol);
+    const admin = createSql(TEST_ADMIN_URL);
+    const left = await admin`select (select count(*) from bankroll_accounts where user_id = ${carol})::int as a, (select count(*) from sessions where user_id = ${carol})::int as s, (select count(*) from audit_log where user_id = ${carol})::int as l`;
+    await admin.end();
+    expect(left[0]).toEqual({ a: 0, s: 0, l: 0 });
+    expect((await as(alice, loadWorkspace)).dataset.accounts.map((a) => a.id)).toContain(aliceAccount);
+  });
 });
+

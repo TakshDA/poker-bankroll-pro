@@ -1,5 +1,6 @@
 import type { Tx } from "../server/db";
-import { resolveSessionTimes } from "../finance/dates";
+import type { PlaySetting, RecordStatus, TournamentFormat, TournamentSpeed, TournamentStatus } from "../finance/types";
+import { resolveSessionTimes, todayIn } from "../finance/dates";
 import { FieldError, parseTagList, toMinor, toMinorOrNull } from "../validation/common";
 import type { TournamentInput } from "../validation/schemas";
 import { assertOwned, NotFoundError, requireAccount, resolvePlace, upsertTags } from "./common";
@@ -96,10 +97,10 @@ export async function softDeleteTournament(tx: Tx, id: string): Promise<void> {
 export interface TournamentDetail {
   id: string;
   name: string;
-  status: string;
-  setting: string;
-  format: string;
-  speed: string;
+  status: TournamentStatus;
+  setting: PlaySetting;
+  format: TournamentFormat;
+  speed: TournamentSpeed;
   isBounty: boolean;
   accountId: string;
   venueId: string | null;
@@ -117,7 +118,7 @@ export interface TournamentDetail {
   createdAt: string;
   updatedAt: string;
   entries: { entryNumber: number; buyInMinor: number; feeMinor: number; rebuyCount: number; rebuysMinor: number; addonsMinor: number }[];
-  periods: { id: string; status: string; startedAt: string; endedAt: string | null; breakMinutes: number; dayLabel: string | null }[];
+  periods: { id: string; status: RecordStatus; startedAt: string; endedAt: string | null; breakMinutes: number; dayLabel: string | null }[];
   tags: string[];
 }
 
@@ -133,4 +134,33 @@ export async function getTournament(tx: Tx, id: string): Promise<TournamentDetai
     tx<{ name: string }[]>`select t.name from tournament_tags tt join tags t on t.id = tt.tag_id where tt.tournament_id = ${id} order by lower(t.name)`,
   ]);
   return { ...rows[0], entries, periods, tags: tags.map((t) => t.name) };
+}
+
+/**
+ * Copy a tournament as a draft dated today (for recurring events): same name,
+ * venue, format and first-entry buy-in/fee; no results, re-entries or days.
+ */
+export async function duplicateTournament(tx: Tx, id: string): Promise<string> {
+  const src = await getTournament(tx, id);
+  if (!src) throw new NotFoundError("Tournament not found");
+  const settings = await getSettings(tx);
+  const today = todayIn(settings.timezone);
+  const row = {
+    name: src.name,
+    status: "draft",
+    setting: src.setting,
+    format: src.format,
+    speed: src.speed,
+    isBounty: src.isBounty,
+    accountId: src.accountId,
+    venueId: src.venueId,
+    platformId: src.platformId,
+    gameTypeId: src.gameTypeId,
+    startDate: today,
+    guaranteeMinor: src.guaranteeMinor,
+  };
+  const newId = (await tx<{ id: string }[]>`insert into tournaments ${tx(row)} returning id`)[0].id;
+  const first = src.entries[0];
+  await tx`insert into tournament_entries ${tx({ tournamentId: newId, entryNumber: 1, buyInMinor: first?.buyInMinor ?? 0, feeMinor: first?.feeMinor ?? 0, rebuyCount: 0, rebuysMinor: 0, addonsMinor: 0 })}`;
+  return newId;
 }

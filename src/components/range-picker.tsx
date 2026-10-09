@@ -29,8 +29,8 @@ export function RangePicker({ current, defaultPreset = "all" }: { current: { pre
     start(() => router.replace(`${pathname}${next.size ? `?${next}` : ""}`, { scroll: false }));
   };
   return (
-    <div className="flex flex-col gap-2 sm:items-end" aria-busy={pending}>
-      <div role="group" aria-label="Date range" className="flex gap-1 overflow-x-auto rounded-lg border border-border bg-surface p-1">
+    <div className="flex min-w-0 max-w-full flex-col gap-2 sm:items-end" aria-busy={pending}>
+      <div role="group" aria-label="Date range" className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-border bg-surface p-1">
         {PRESETS.map((p) => (
           <button
             key={p.value}
@@ -38,7 +38,7 @@ export function RangePicker({ current, defaultPreset = "all" }: { current: { pre
             aria-pressed={current.preset === p.value}
             onClick={() => go({ range: p.value, ...(p.value !== "custom" ? { from: null, to: null } : {}) })}
             className={cn(
-              "whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+              "whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs sm:px-3 font-medium transition-colors",
               current.preset === p.value ? "bg-surface-3 text-fg" : "text-fg-muted hover:text-fg",
             )}
           >

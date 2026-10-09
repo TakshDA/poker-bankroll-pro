@@ -54,6 +54,34 @@ export function summarizeTournaments(results: PokerResult[]): TournamentSummary 
   };
 }
 
+/** Buy-in levels in major units of the base currency (lower bounds). */
+export const BUY_IN_LEVELS = [0, 10, 30, 100, 300, 1000, 3000] as const;
+
+/** Index into BUY_IN_LEVELS for a face buy-in (buy-in + fee of the first entry). */
+export function buyInLevel(faceBuyInMinor: Minor, digits: number): number {
+  let level = 0;
+  BUY_IN_LEVELS.forEach((lower, i) => {
+    if (faceBuyInMinor >= lower * 10 ** digits) level = i;
+  });
+  return level;
+}
+
+export interface TournamentGroupRow extends TournamentSummary {
+  key: string;
+  label: string;
+}
+
+/** Tournament summary (ROI, ITM, ...) per group. Only completed events count. */
+export function groupTournaments(results: PokerResult[], keyOf: (r: PokerResult) => string | null, labelOf: (key: string) => string = (k) => k): TournamentGroupRow[] {
+  const groups = new Map<string, PokerResult[]>();
+  for (const r of results) {
+    if (r.kind !== "tournament" || !r.countsInStats) continue;
+    const k = keyOf(r) ?? "__none__";
+    groups.set(k, [...(groups.get(k) ?? []), r]);
+  }
+  return [...groups].map(([key, list]) => ({ key, label: key === "__none__" ? "Unspecified" : labelOf(key), ...summarizeTournaments(list) }));
+}
+
 export interface GroupRow {
   key: string;
   label: string;
