@@ -87,6 +87,11 @@ describe("formatting", () => {
     expect(formatMoney(1205, "USD", 2, { signed: true })).toBe("+US$12.05");
     expect(formatMoney(0, "USD", 2, { signed: true })).toBe("US$0.00");
   });
+  it("compact notation rounds small amounts to whole units", () => {
+    expect(formatMoney(6670, "CAD", 2, { signed: true, compact: true })).toBe("+$67");
+    expect(formatMoney(-10540, "CAD", 2, { compact: true })).toBe("-$105");
+    expect(formatMoney(123456, "CAD", 2, { compact: true })).toBe("$1.2K");
+  });
 });
 
 describe("currency conversion", () => {

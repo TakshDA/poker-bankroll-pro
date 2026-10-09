@@ -144,13 +144,15 @@ export function formatMoney(amount: Minor, currency: string, minorDigits = 2, op
   assertMinor(amount);
   const { signed = false, compact = false, locale = "en-CA" } = opts;
   const decimal = minorToDecimal(amount, minorDigits);
+  // Compact: whole units below 1,000 ("$67"), one decimal above ("$1.2K").
+  const compactDigits = Math.abs(amount) < 1000 * 10 ** minorDigits ? 0 : 1;
   const fmt = new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
     // "symbol" in en-CA keeps currencies distinct: $ (CAD), US$, A$, €…
     currencyDisplay: "symbol",
     minimumFractionDigits: compact ? 0 : minorDigits,
-    maximumFractionDigits: compact ? 1 : minorDigits,
+    maximumFractionDigits: compact ? compactDigits : minorDigits,
     notation: compact ? "compact" : "standard",
     signDisplay: signed ? "exceptZero" : "auto",
   });

@@ -3,12 +3,14 @@ import { Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, PageHeader } from "@/components/ui/misc";
 import { getWorkspace } from "@/lib/server/workspace";
+import { sp, validDate } from "@/lib/server/search-params";
 import { SessionForm } from "../session-form";
 import { formOptions, newSessionValues } from "../form-values";
 
 export const metadata = { title: "Log cash session" };
 
-export default async function NewSessionPage() {
+export default async function NewSessionPage({ searchParams }: PageProps<"/sessions/new">) {
+  const date = validDate(sp(await searchParams).date);
   const ws = await getWorkspace();
   const opts = formOptions(ws);
   return (
@@ -26,7 +28,7 @@ export default async function NewSessionPage() {
           }
         />
       ) : (
-        <SessionForm values={newSessionValues(ws)} {...opts} />
+        <SessionForm values={{ ...newSessionValues(ws), ...(date ? { date } : {}) }} {...opts} />
       )}
     </>
   );
