@@ -138,6 +138,7 @@ export interface Expense {
   tournamentId: string | null;
   venueId: string | null;
   description: string | null;
+  vendor?: string | null;
 }
 
 export interface FinanceSettings {

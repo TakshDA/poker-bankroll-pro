@@ -5,10 +5,26 @@ import { useFormStatus } from "react-dom";
 import { toast } from "sonner";
 import { Button, type ButtonProps } from "./ui/button";
 import { Dialog, DialogClose, DialogContent, DialogTrigger } from "./ui/dialog";
-import type { ActionState } from "@/lib/validation/common";
+import { initialActionState, type ActionState } from "@/lib/validation/common";
 
-export function SubmitButton({ children, pendingText, ...props }: ButtonProps & { pendingText?: string }) {
-  const { pending } = useFormStatus();
+/**
+ * useActionState for forms, submitted through onSubmit instead of the form
+ * `action` prop. React resets a form after an `action` submission, which would
+ * wipe what the user typed whenever validation fails; this keeps their input.
+ */
+export function useFormAction(fn: (prev: ActionState, fd: FormData) => Promise<ActionState>) {
+  const [state, dispatch, pending] = React.useActionState(fn, initialActionState);
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
+    React.startTransition(() => dispatch(fd));
+  };
+  return [state, onSubmit, pending] as const;
+}
+
+export function SubmitButton({ children, pendingText, pending: pendingProp, ...props }: ButtonProps & { pendingText?: string; pending?: boolean }) {
+  const status = useFormStatus();
+  const pending = pendingProp ?? status.pending;
   return (
     <Button type="submit" disabled={pending || props.disabled} aria-busy={pending} {...props}>
       {pending ? <Loader2 className="animate-spin" /> : null}

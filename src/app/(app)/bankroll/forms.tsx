@@ -1,9 +1,8 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { Field, Input, MoneyInput, Select, Textarea } from "@/components/ui/input";
-import { errorsFor, FormError, SubmitButton, useActionToast } from "@/components/forms";
-import { initialActionState } from "@/lib/validation/common";
+import { useFormAction, errorsFor, FormError, SubmitButton, useActionToast } from "@/components/forms";
 import { TRANSACTION_LABELS } from "@/lib/format";
 import { saveAccountAction, saveTransactionAction, saveTransferAction } from "./actions";
 
@@ -27,7 +26,7 @@ export function AccountForm({
   onDone?: () => void;
 }) {
   const router = useRouter();
-  const [state, action] = useActionState(saveAccountAction, initialActionState);
+  const [state, onSubmit, pending] = useFormAction(saveAccountAction);
   const [currency, setCurrency] = useState(values.currency);
   useActionToast(state, {
     onSuccess: (s) => {
@@ -37,7 +36,7 @@ export function AccountForm({
   });
   const err = (f: string) => errorsFor(state, f);
   return (
-    <form action={action} className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
       {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
       <Field label="Name" htmlFor="acc-name" error={err("name")} required className="sm:col-span-2">
         <Input id="acc-name" name="name" defaultValue={values.name} placeholder="e.g. Live CAD roll" maxLength={80} required />
@@ -77,7 +76,7 @@ export function AccountForm({
       </Field>
       <div className="flex flex-col gap-2 sm:col-span-2">
         <FormError state={state} />
-        <SubmitButton>{values.id ? "Save account" : "Create account"}</SubmitButton>
+        <SubmitButton pending={pending}>{values.id ? "Save account" : "Create account"}</SubmitButton>
       </div>
     </form>
   );
@@ -92,7 +91,7 @@ export function TransactionForm({
   values: { id?: string; accountId: string; type: string; amount: string; occurredOn: string; description: string; reference: string };
   onDone?: () => void;
 }) {
-  const [state, action] = useActionState(saveTransactionAction, initialActionState);
+  const [state, onSubmit, pending] = useFormAction(saveTransactionAction);
   const [accountId, setAccountId] = useState(values.accountId);
   const [type, setType] = useState(values.type);
   useActionToast(state, { onSuccess: () => onDone?.() });
@@ -106,7 +105,7 @@ export function TransactionForm({
     adjustment: "Correction to reconcile with your real balance. Use a negative amount to reduce. Not profit.",
   };
   return (
-    <form action={action} className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
       {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
       <Field label="Type" htmlFor="tx-type" error={err("type")} hint={hints[type]} className="sm:col-span-2">
         <Select id="tx-type" name="type" value={type} onChange={(e) => setType(e.target.value)}>
@@ -140,7 +139,7 @@ export function TransactionForm({
       </Field>
       <div className="flex flex-col gap-2 sm:col-span-2">
         <FormError state={state} />
-        <SubmitButton>{values.id ? "Save" : "Record"}</SubmitButton>
+        <SubmitButton pending={pending}>{values.id ? "Save" : "Record"}</SubmitButton>
       </div>
     </form>
   );
@@ -155,7 +154,7 @@ export function TransferForm({
   values: { id?: string; fromAccountId: string; toAccountId: string; fromAmount: string; toAmount: string; occurredOn: string; description: string };
   onDone?: () => void;
 }) {
-  const [state, action] = useActionState(saveTransferAction, initialActionState);
+  const [state, onSubmit, pending] = useFormAction(saveTransferAction);
   const [from, setFrom] = useState(values.fromAccountId);
   const [to, setTo] = useState(values.toAccountId);
   useActionToast(state, { onSuccess: () => onDone?.() });
@@ -164,7 +163,7 @@ export function TransferForm({
   const toCur = accounts.find((a) => a.id === to)?.currency;
   const cross = fromCur && toCur && fromCur !== toCur;
   return (
-    <form action={action} className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
       {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
       <Field label="From" htmlFor="tr-from" error={err("fromAccountId")}>
         <Select id="tr-from" name="fromAccountId" value={from} onChange={(e) => setFrom(e.target.value)}>
@@ -201,7 +200,7 @@ export function TransferForm({
       <p className="text-xs text-fg-subtle sm:col-span-2">Transfers move money between your own accounts. They never change your combined bankroll or profit.</p>
       <div className="flex flex-col gap-2 sm:col-span-2">
         <FormError state={state} />
-        <SubmitButton>{values.id ? "Save transfer" : "Record transfer"}</SubmitButton>
+        <SubmitButton pending={pending}>{values.id ? "Save transfer" : "Record transfer"}</SubmitButton>
       </div>
     </form>
   );

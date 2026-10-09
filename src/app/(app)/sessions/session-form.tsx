@@ -1,12 +1,11 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useActionState, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, MoneyInput, Select, Textarea } from "@/components/ui/input";
 import { InfoTip } from "@/components/ui/tooltip";
-import { errorsFor, FormError, SubmitButton, useActionToast } from "@/components/forms";
+import { useFormAction, errorsFor, FormError, SubmitButton, useActionToast } from "@/components/forms";
 import { Segmented } from "@/components/segmented";
-import { initialActionState } from "@/lib/validation/common";
 import { minorUnits } from "@/lib/finance/currency";
 import { parseMoney } from "@/lib/finance/money";
 import { cashInvested, cashSessionNet } from "@/lib/finance/records";
@@ -85,7 +84,7 @@ function tryMinor(v: string, digits: number): number | null {
 
 export function SessionForm({ values, accounts, gameTypes, venues, platforms, stakeLevels }: SessionFormProps) {
   const router = useRouter();
-  const [state, action] = useActionState(saveSessionAction, initialActionState);
+  const [state, onSubmit, pending] = useFormAction(saveSessionAction);
   const [v, setV] = useState(values);
   const set = (k: keyof SessionFormValues) => (e: { target: { value: string } }) => setV((p) => ({ ...p, [k]: e.target.value }));
   useActionToast(state, {
@@ -142,7 +141,7 @@ export function SessionForm({ values, accounts, gameTypes, venues, platforms, st
   const online = v.setting === "online";
 
   return (
-    <form action={action} className="grid gap-5 lg:grid-cols-[1fr_320px]" noValidate>
+    <form onSubmit={onSubmit} className="grid gap-5 lg:grid-cols-[1fr_320px]" noValidate>
       {v.id ? <input type="hidden" name="id" value={v.id} /> : null}
       <div className="flex flex-col gap-5">
         <Card>
@@ -374,7 +373,7 @@ export function SessionForm({ values, accounts, gameTypes, venues, platforms, st
               <p className="text-negative">Check the amounts — one is not a valid number.</p>
             )}
             <FormError state={state} />
-            <SubmitButton className="w-full" size="lg" pendingText="Saving…">
+            <SubmitButton pending={pending} className="w-full" size="lg" pendingText="Saving…">
               {v.id ? "Save changes" : v.status === "draft" ? "Save draft" : "Save session"}
             </SubmitButton>
           </CardContent>

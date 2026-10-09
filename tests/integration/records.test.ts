@@ -8,7 +8,7 @@ import { as, closeDb, makeAccount, newUser } from "./helpers";
 import { loadWorkspace } from "@/lib/data/workspace";
 import { duplicateCashSession, getCashSession, saveCashSession } from "@/lib/data/sessions";
 import { saveTournament } from "@/lib/data/tournaments";
-import { DuplicateExpenseError, purge, restore, saveExpense, saveTransaction, saveTransfer, softDelete, deleteAccount, saveAccount } from "@/lib/data/money-records";
+import { DuplicateExpenseError, listTrash, purge, restore, saveExpense, saveTransaction, saveTransfer, softDelete, deleteAccount, saveAccount } from "@/lib/data/money-records";
 import { computeDashboard, createContext } from "@/lib/finance/metrics";
 import { accountBalances } from "@/lib/finance/ledger";
 import { resolveRange } from "@/lib/finance/dates";
@@ -225,6 +225,28 @@ describe("bankroll accounts, transfers and expenses", () => {
     const { m } = await as(u, metrics);
     expect(m.expensesMinor).toBe(9100);
     expect(m.netPokerProfitMinor).toBe(-9100);
+  });
+
+  it("lists every kind of trashed record with its signed effect, and purges attachments rows", async () => {
+    const u = await newUser();
+    const a = await makeAccount(u, { openingBalanceMinor: 100000 });
+    const b = await makeAccount(u);
+    const ws = await as(u, loadWorkspace);
+    const food = ws.expenseCategories.find((c) => c.kind === "food")!.id;
+    const sid = await as(u, (tx) => saveCashSession(tx, baseSession(a, { date: "2026-04-01", startTime: "23:30", endTime: "01:00", buyIn: "200", cashOut: "150", tips: "5" })));
+    const eid = await as(u, (tx) => saveExpense(tx, { accountId: a, categoryId: food, amount: "30", refunded: "10", occurredOn: "2026-04-01", confirmDuplicate: false }));
+    const wid = await as(u, (tx) => saveTransaction(tx, { accountId: a, type: "withdrawal", amount: "40", occurredOn: "2026-04-02" }));
+    const tid = await as(u, (tx) => saveTransfer(tx, { fromAccountId: a, toAccountId: b, fromAmount: "25", occurredOn: "2026-04-03" }));
+    await as(u, (tx) => tx`insert into attachments (expense_id, storage_path, file_name, content_type, size_bytes) values (${eid}, ${`${u}/x`}, 'r.png', 'image/png', 10)`);
+    for (const [t, id] of [["sessions", sid], ["expenses", eid], ["transactions", wid], ["transfers", tid]] as const) await as(u, (tx) => softDelete(tx, t, id));
+    const items = await as(u, (tx) => listTrash(tx, "America/Toronto"));
+    const effect = Object.fromEntries(items.map((i) => [i.table, i.amountMinor]));
+    expect(effect).toEqual({ sessions: -5500, expenses: -2000, transactions: -4000, transfers: 2500 });
+    expect(items.find((i) => i.table === "sessions")!.date).toBe("2026-04-01"); // local date, not UTC
+    const paths = await as(u, (tx) => purge(tx, "expenses", eid));
+    expect(paths).toEqual([`${u}/x`]);
+    expect(await as(u, (tx) => tx`select 1 from attachments`)).toHaveLength(0);
+    expect(await as(u, (tx) => listTrash(tx, "America/Toronto"))).toHaveLength(3);
   });
 
   it("account currency is locked once records reference it, and in-use accounts cannot be deleted", async () => {

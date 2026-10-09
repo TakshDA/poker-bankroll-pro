@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState, Money, PageHeader } from "@/components/ui/misc";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { FilterBar, Pagination } from "@/components/filter-bar";
+import { ExportMenu } from "@/components/export-menu";
 import { dateLabel, duration, SETTING_LABELS, STATUS_LABELS } from "@/lib/format";
 import { getWorkspace } from "@/lib/server/workspace";
 import { pageOf, sp, validDate } from "@/lib/server/search-params";
@@ -42,6 +43,7 @@ export default async function SessionsPage({ searchParams }: PageProps<"/session
         description={`${rows.length} of ${all.length} cash sessions and tournaments`}
         actions={
           <>
+            <ExportMenu entity="sessions" />
             <Button asChild variant="secondary">
               <Link href="/tournaments/new">
                 <Plus /> Tournament

@@ -8,6 +8,7 @@ import { LedgerTable, type LedgerRow } from "@/components/records/ledger-table";
 import { Stat } from "@/components/stat";
 import { drawdown, LEDGER_CLASS } from "@/lib/finance/ledger";
 import { todayIn } from "@/lib/finance/dates";
+import { addMinor } from "@/lib/finance/money";
 import { dateLabel, money, moneyInput } from "@/lib/format";
 import { isUuid } from "@/lib/server/db";
 import { getFinance } from "@/lib/server/workspace";
@@ -25,14 +26,13 @@ export default async function AccountPage({ params }: PageProps<"/bankroll/[id]"
   const cur = account.currency;
   const today = todayIn(ws.settings.timezone);
 
-  let running = 0;
-  const entries: LedgerRow[] = ctx.ledger
-    .filter((e) => e.accountId === id)
-    .map((e) => {
-      running += e.amountMinor;
-      return { ...e, accountName: account.name, balanceMinor: running };
-    });
-  const balance = running;
+  const entries: LedgerRow[] = [];
+  for (const e of ctx.ledger) {
+    if (e.accountId !== id) continue;
+    const prev = entries.at(-1)?.balanceMinor ?? 0;
+    entries.push({ ...e, accountName: account.name, balanceMinor: addMinor(prev, e.amountMinor) });
+  }
+  const balance = entries.at(-1)?.balanceMinor ?? 0;
   const daily = new Map<string, number>();
   for (const e of entries) daily.set(e.date, e.balanceMinor!);
   const series = [...daily.entries()].map(([date, value]) => ({ date, balance: value }));

@@ -32,9 +32,12 @@ export function FormDialog({
   const pathname = usePathname();
   const fromUrl = openParam ? params.get(openParam.key) === openParam.value : false;
   const [open, setOpen] = React.useState(fromUrl);
-  React.useEffect(() => {
+  // Open when the URL starts asking for it (adjusting state during render).
+  const [prevFromUrl, setPrevFromUrl] = React.useState(fromUrl);
+  if (fromUrl !== prevFromUrl) {
+    setPrevFromUrl(fromUrl);
     if (fromUrl) setOpen(true);
-  }, [fromUrl]);
+  }
   const change = (v: boolean) => {
     setOpen(v);
     if (!v && fromUrl && openParam) {

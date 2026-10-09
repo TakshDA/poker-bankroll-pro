@@ -149,7 +149,7 @@ export async function loadWorkspace(tx: Tx): Promise<Workspace> {
         from transfers where deleted_at is null order by occurred_on, created_at`,
       tx<Expense[]>`
         select e.id, e.account_id, e.category_id, c.name as category_name, c.kind as category_kind, e.amount_minor,
-               e.refunded_minor, e.occurred_on, e.session_id, e.tournament_id, e.venue_id, e.description
+               e.refunded_minor, e.occurred_on, e.session_id, e.tournament_id, e.venue_id, e.description, e.vendor
         from expenses e join expense_categories c on c.id = e.category_id
         where e.deleted_at is null order by e.occurred_on, e.created_at`,
       tx<RateRow[]>`

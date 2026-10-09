@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { as, closeDb, db, makeAccount, newUser } from "./helpers";
 import { loadWorkspace } from "@/lib/data/workspace";
 import { saveCashSession } from "@/lib/data/sessions";
+import { exportBackup } from "@/lib/data/backup";
 
 let alice: string;
 let bob: string;
@@ -114,5 +115,16 @@ describe("row level security", () => {
     await expect(as(alice, (tx) => tx`delete from audit_log`)).rejects.toThrow(/permission denied/);
     const mine = await as(alice, (tx) => tx`select id from audit_log where record_id = ${aliceSession}`);
     expect(mine.length).toBeGreaterThan(0);
+  });
+
+  it("a JSON backup contains only the signed-in user's rows", async () => {
+    const mine = await as(alice, exportBackup);
+    const theirs = await as(bob, exportBackup);
+    expect(mine.tables.bankroll_accounts.map((r) => r.id)).toContain(aliceAccount);
+    expect(mine.tables.sessions.map((r) => r.id)).toContain(aliceSession);
+    expect(mine.tables.cash_game_details[0]).toHaveProperty("buy_in_minor", 30000);
+    expect(theirs.tables.bankroll_accounts).toHaveLength(0);
+    expect(theirs.tables.sessions).toHaveLength(0);
+    for (const rows of Object.values(theirs.tables)) for (const r of rows) if ("user_id" in r) expect(r.user_id).toBe(bob);
   });
 });

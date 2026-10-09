@@ -1,20 +1,19 @@
 "use client";
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
-import { FormError, SubmitButton } from "@/components/forms";
-import { initialActionState } from "@/lib/validation/common";
+import { FormError, SubmitButton, useFormAction } from "@/components/forms";
 import { signIn, signUp } from "./actions";
 
 export function LoginForm({ canSignUp }: { canSignUp: boolean }) {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [inState, inAction] = useActionState(signIn, initialActionState);
-  const [upState, upAction] = useActionState(signUp, initialActionState);
+  const [inState, inSubmit, inPending] = useFormAction(signIn);
+  const [upState, upSubmit, upPending] = useFormAction(signUp);
   const state = mode === "signin" ? inState : upState;
   return (
     <Card>
       <CardContent className="pt-5">
-        <form action={mode === "signin" ? inAction : upAction} className="flex flex-col gap-4">
+        <form onSubmit={mode === "signin" ? inSubmit : upSubmit} className="flex flex-col gap-4">
           <Field label="Email" htmlFor="email">
             <Input id="email" name="email" type="email" autoComplete="email" required />
           </Field>
@@ -22,7 +21,7 @@ export function LoginForm({ canSignUp }: { canSignUp: boolean }) {
             <Input id="password" name="password" type="password" autoComplete={mode === "signin" ? "current-password" : "new-password"} required />
           </Field>
           <FormError state={state} />
-          <SubmitButton className="w-full" pendingText={mode === "signin" ? "Signing in…" : "Creating…"}>
+          <SubmitButton pending={mode === "signin" ? inPending : upPending} className="w-full" pendingText={mode === "signin" ? "Signing in…" : "Creating…"}>
             {mode === "signin" ? "Sign in" : "Create owner account"}
           </SubmitButton>
         </form>
