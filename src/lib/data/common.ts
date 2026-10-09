@@ -56,3 +56,31 @@ export function friendlyDbError(e: unknown): string | null {
       return null;
   }
 }
+
+/** Return the id of a venue/platform with this name, creating it if needed. */
+export async function ensureNamed(tx: Tx, table: "venues" | "platforms", name: string, kind?: string): Promise<string> {
+  const existing = await tx<{ id: string }[]>`select id from ${tx(table)} where lower(name) = lower(${name})`;
+  if (existing[0]) return existing[0].id;
+  const row: Record<string, unknown> = { name };
+  if (table === "venues") row.kind = kind ?? "casino";
+  return (await tx<{ id: string }[]>`insert into ${tx(table)} ${tx(row)} returning id`)[0].id;
+}
+
+/** Resolve venue/platform ids for a record, honouring "add new" names. */
+export async function resolvePlace(
+  tx: Tx,
+  setting: string,
+  input: { venueId?: string; platformId?: string; newVenueName?: string; newPlatformName?: string },
+): Promise<{ venueId: string | null; platformId: string | null }> {
+  if (setting === "online") {
+    if (input.newPlatformName) return { venueId: null, platformId: await ensureNamed(tx, "platforms", input.newPlatformName) };
+    await assertOwned(tx, "platforms", input.platformId, "platformId");
+    return { venueId: null, platformId: input.platformId ?? null };
+  }
+  if (input.newVenueName) {
+    const kind = setting === "home_game" ? "home" : setting === "private_game" ? "private_club" : "casino";
+    return { venueId: await ensureNamed(tx, "venues", input.newVenueName, kind), platformId: null };
+  }
+  await assertOwned(tx, "venues", input.venueId, "venueId");
+  return { venueId: input.venueId ?? null, platformId: null };
+}

@@ -2,7 +2,7 @@ import type { Tx } from "../server/db";
 import { resolveSessionTimes, todayIn } from "../finance/dates";
 import { FieldError, parseTagList, toMinor, toMinorOrNull } from "../validation/common";
 import type { CashSessionInput } from "../validation/schemas";
-import { assertOwned, NotFoundError, requireAccount, upsertTags } from "./common";
+import { assertOwned, NotFoundError, requireAccount, resolvePlace, upsertTags } from "./common";
 import { getSettings } from "./workspace";
 
 /** Validate business rules, convert money, and write a cash session. */
@@ -12,8 +12,7 @@ export async function saveCashSession(tx: Tx, input: CashSessionInput, existingI
   const cur = account.currency;
 
   await assertOwned(tx, "game_types", input.gameTypeId, "gameTypeId");
-  await assertOwned(tx, "venues", input.venueId, "venueId");
-  await assertOwned(tx, "platforms", input.platformId, "platformId");
+  const place = await resolvePlace(tx, input.setting, input);
 
   let smallBlind = toMinorOrNull(input.smallBlind, cur, "smallBlind");
   let bigBlind = toMinorOrNull(input.bigBlind, cur, "bigBlind");
@@ -61,8 +60,8 @@ export async function saveCashSession(tx: Tx, input: CashSessionInput, existingI
     setting: input.setting,
     gameTypeId: input.gameTypeId ?? null,
     variant: input.variant ?? null,
-    venueId: input.setting === "online" ? null : (input.venueId ?? null),
-    platformId: input.setting === "online" ? (input.platformId ?? null) : null,
+    venueId: place.venueId,
+    platformId: place.platformId,
     startedAt: times.startedAt,
     endedAt: times.endedAt,
     breakMinutes,

@@ -1,26 +1,142 @@
 @import "tailwindcss";
 
+/*
+ * Poker Bankroll Pro design tokens.
+ * Dark (default): charcoal/black surfaces, emerald gains, red losses, gold accents.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #07080a;
+  --surface: #0f1113;
+  --surface-2: #15181b;
+  --surface-3: #1c2024;
+  --border: #23272c;
+  --border-strong: #30363c;
+  --fg: #e9ebee;
+  --fg-muted: #9aa3ad;
+  --fg-subtle: #6b747e;
+  --positive: #22c58b;
+  --positive-strong: #10b981;
+  --positive-soft: rgba(16, 185, 129, 0.12);
+  --negative: #f2555a;
+  --negative-soft: rgba(242, 85, 90, 0.12);
+  --gold: #d6b25e;
+  --gold-soft: rgba(214, 178, 94, 0.12);
+  --info: #60a5fa;
+  --warning: #f5b84a;
+  --warning-soft: rgba(245, 184, 74, 0.12);
+  --ring: rgba(34, 197, 139, 0.55);
+  --chart-grid: #1f2328;
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg: #f4f5f6;
+  --surface: #ffffff;
+  --surface-2: #f7f8f9;
+  --surface-3: #eef0f2;
+  --border: #e2e5e9;
+  --border-strong: #cfd4da;
+  --fg: #111418;
+  --fg-muted: #525b66;
+  --fg-subtle: #7c8590;
+  --positive: #059669;
+  --positive-strong: #047857;
+  --positive-soft: rgba(5, 150, 105, 0.1);
+  --negative: #dc2626;
+  --negative-soft: rgba(220, 38, 38, 0.08);
+  --gold: #a07a1c;
+  --gold-soft: rgba(160, 122, 28, 0.1);
+  --warning: #b7791f;
+  --warning-soft: rgba(183, 121, 31, 0.1);
+  --chart-grid: #e7e9ec;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  color-scheme: light;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-positive: var(--positive);
+  --color-positive-strong: var(--positive-strong);
+  --color-positive-soft: var(--positive-soft);
+  --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --shadow-card: var(--shadow);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--bg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Tabular figures everywhere money is shown */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+}
+[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="light"] input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: none;
+}
+
+/* Recharts: inherit theme colours */
+.recharts-cartesian-grid line {
+  stroke: var(--chart-grid);
+}
+.recharts-text {
+  fill: var(--fg-subtle);
+  font-size: 11px;
+}
+.recharts-tooltip-cursor {
+  fill: rgba(127, 127, 127, 0.08);
+}
+
+@media print {
+  aside,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+    color: black;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

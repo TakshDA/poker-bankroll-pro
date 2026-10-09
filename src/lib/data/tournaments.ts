@@ -2,7 +2,7 @@ import type { Tx } from "../server/db";
 import { resolveSessionTimes } from "../finance/dates";
 import { FieldError, parseTagList, toMinor, toMinorOrNull } from "../validation/common";
 import type { TournamentInput } from "../validation/schemas";
-import { assertOwned, NotFoundError, requireAccount, upsertTags } from "./common";
+import { assertOwned, NotFoundError, requireAccount, resolvePlace, upsertTags } from "./common";
 import { getSettings } from "./workspace";
 
 export async function saveTournament(tx: Tx, input: TournamentInput, existingId?: string): Promise<string> {
@@ -10,8 +10,7 @@ export async function saveTournament(tx: Tx, input: TournamentInput, existingId?
   const account = await requireAccount(tx, input.accountId);
   const cur = account.currency;
   await assertOwned(tx, "game_types", input.gameTypeId, "gameTypeId");
-  await assertOwned(tx, "venues", input.venueId, "venueId");
-  await assertOwned(tx, "platforms", input.platformId, "platformId");
+  const place = await resolvePlace(tx, input.setting, input);
 
   const entries = input.entries.map((e, i) => ({
     entryNumber: i + 1,
@@ -41,8 +40,8 @@ export async function saveTournament(tx: Tx, input: TournamentInput, existingId?
     speed: input.speed,
     isBounty: input.isBounty,
     accountId: account.id,
-    venueId: input.setting === "online" ? null : (input.venueId ?? null),
-    platformId: input.setting === "online" ? (input.platformId ?? null) : null,
+    venueId: place.venueId,
+    platformId: place.platformId,
     gameTypeId: input.gameTypeId ?? null,
     startDate: input.startDate,
     endDate: input.endDate ?? null,

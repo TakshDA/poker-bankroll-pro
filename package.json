@@ -7,15 +7,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test",
     "db:migrate": "tsx scripts/db-migrate.ts",
-    "db:seed-demo": "tsx scripts/seed-demo.ts",
-    "user:create": "tsx scripts/create-user.ts",
-    "backup": "tsx scripts/backup.ts"
+    "db:seed-demo": "tsx --conditions=react-server scripts/seed-demo.ts",
+    "user:create": "tsx --conditions=react-server scripts/create-user.ts",
+    "backup": "tsx --conditions=react-server scripts/backup.ts"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",

@@ -26,6 +26,7 @@ export interface Account {
   goalBalanceMinor: Minor | null;
   categoryId: string | null;
   archived: boolean;
+  notes?: string | null;
 }
 
 export interface CashSession {

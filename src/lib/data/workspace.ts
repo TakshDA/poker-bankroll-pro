@@ -17,6 +17,7 @@ import type {
   Transfer,
 } from "../finance/types";
 import type { ExchangeRate } from "../finance/fx";
+import type { Goal } from "../finance/goals";
 
 export interface UserSettings {
   userId: string;
@@ -51,10 +52,36 @@ export interface Reference {
   expenseCategories: ExpenseCategory[];
 }
 
+export interface PlannedSession {
+  id: string;
+  plannedDate: string;
+  startTime: string | null;
+  kind: "cash" | "tournament";
+  setting: string;
+  title: string | null;
+  venueId: string | null;
+  platformId: string | null;
+  gameTypeId: string | null;
+  stakeLevelId: string | null;
+  notes: string | null;
+  reminderMinutesBefore: number | null;
+  status: "planned" | "done" | "skipped";
+}
+
+export interface DayNote {
+  id: string;
+  noteDate: string;
+  title: string | null;
+  body: string;
+}
+
 export interface Workspace extends Reference {
   settings: UserSettings;
   dataset: Dataset;
   rateRows: RateRow[];
+  goals: Goal[];
+  planned: PlannedSession[];
+  notes: DayNote[];
 }
 
 export async function getSettings(tx: Tx): Promise<UserSettings> {
@@ -89,11 +116,11 @@ export async function getReference(tx: Tx): Promise<Reference> {
 
 export async function loadWorkspace(tx: Tx): Promise<Workspace> {
   const settings = await getSettings(tx);
-  const [ref, accounts, cashRows, tournamentRows, entryRows, periodRows, transactions, transfers, expenses, rateRows, sessionTags, tournamentTags] =
+  const [ref, accounts, cashRows, tournamentRows, entryRows, periodRows, transactions, transfers, expenses, rateRows, sessionTags, tournamentTags, goals, planned, notes] =
     await Promise.all([
       getReference(tx),
       tx<(Account & { archivedAt: string | null })[]>`
-        select id, name, currency, opening_balance_minor, opening_date, min_balance_minor, goal_balance_minor, category_id, archived_at
+        select id, name, currency, opening_balance_minor, opening_date, min_balance_minor, goal_balance_minor, category_id, archived_at, notes
         from bankroll_accounts where deleted_at is null order by created_at`,
       tx<Omit<CashSession, "tagIds" | "currency">[]>`
         select s.id, s.status, s.setting, s.started_at, s.ended_at, s.break_minutes, s.game_type_id, s.variant,
@@ -130,6 +157,14 @@ export async function loadWorkspace(tx: Tx): Promise<Workspace> {
         from exchange_rates order by effective_date desc, base_currency, quote_currency`,
       tx<{ sessionId: string; tagId: string }[]>`select session_id, tag_id from session_tags`,
       tx<{ tournamentId: string; tagId: string }[]>`select tournament_id, tag_id from tournament_tags`,
+      tx<Goal[]>`
+        select id, name, kind, period, target_minor, target_minutes, target_count, currency, account_id, start_date, end_date, active, notes
+        from goals order by created_at`,
+      tx<PlannedSession[]>`
+        select id, planned_date, to_char(start_time, 'HH24:MI') as start_time, kind, setting, title, venue_id, platform_id,
+               game_type_id, stake_level_id, notes, reminder_minutes_before, status
+        from planned_sessions order by planned_date, start_time nulls last`,
+      tx<DayNote[]>`select id, note_date, title, body from notes order by note_date desc, created_at desc`,
     ]);
 
   const accountCurrency = new Map(accounts.map((a) => [a.id, a.currency.trim()]));
@@ -155,7 +190,15 @@ export async function loadWorkspace(tx: Tx): Promise<Workspace> {
     rates: rateRows.map((r) => ({ ...r, baseCurrency: r.baseCurrency.trim(), quoteCurrency: r.quoteCurrency.trim() })),
   };
 
-  return { ...ref, settings, dataset, rateRows: dataset.rates as RateRow[] };
+  return {
+    ...ref,
+    settings,
+    dataset,
+    rateRows: dataset.rates as RateRow[],
+    goals: goals.map((g) => ({ ...g, currency: g.currency?.trim() ?? null })),
+    planned,
+    notes,
+  };
 }
 
 function groupBy<T, V>(rows: T[], key: (r: T) => string, value: (r: T) => V): Map<string, V[]> {
