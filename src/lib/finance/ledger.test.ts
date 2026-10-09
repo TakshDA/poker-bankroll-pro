@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { account, cash, dataset, expense, tournament, transfer, txn } from "./__fixtures__";
-import { accountBalances, buildLedger, combinedBalance, drawdown, LEDGER_CLASS } from "./ledger";
+import { accountBalances, accountStatements, buildLedger, combinedBalance, drawdown, LEDGER_CLASS } from "./ledger";
 import { computeDashboard, createContext } from "./metrics";
 import { resolveRange } from "./dates";
 
@@ -134,5 +134,50 @@ describe("bankroll ledger", () => {
     expect(dd.maxDrawdownFrom).toBe("d2");
     expect(dd.maxDrawdownTo).toBe("d3");
     expect(dd.currentDrawdownMinor).toBe(50);
+  });
+});
+
+describe("account statements", () => {
+  it("opening + period movements = closing, and matches the ledger balance", () => {
+    const a = account({ openingBalanceMinor: 100000, openingDate: "2026-01-01" });
+    const b = account({ name: "Online", openingBalanceMinor: 0, openingDate: "2026-01-01" });
+    const ds = dataset({
+      accounts: [a, b],
+      transactions: [
+        txn({ accountId: a.id, type: "deposit", amountMinor: 20000, occurredOn: "2026-01-20" }),
+        txn({ accountId: a.id, type: "deposit", amountMinor: 50000, occurredOn: "2026-03-05" }),
+        txn({ accountId: a.id, type: "withdrawal", amountMinor: 10000, occurredOn: "2026-03-06" }),
+        txn({ accountId: a.id, type: "rakeback", amountMinor: 1500, occurredOn: "2026-03-07" }),
+        txn({ accountId: a.id, type: "deposit", amountMinor: 99999, occurredOn: "2026-04-02" }),
+      ],
+      transfers: [transfer({ fromAccountId: a.id, toAccountId: b.id, fromAmountMinor: 30000, toAmountMinor: 30000, occurredOn: "2026-03-10" })],
+      cashSessions: [cash({ accountId: a.id, buyInMinor: 30000, cashOutMinor: 45000 })],
+      expenses: [expense({ accountId: a.id, amountMinor: 2500 })],
+    });
+    const [sa, sb] = accountStatements(ds, { from: "2026-03-01", to: "2026-03-31" });
+    expect(sa.openingMinor).toBe(120000);
+    expect(sa.depositsMinor).toBe(50000);
+    expect(sa.withdrawalsMinor).toBe(-10000);
+    expect(sa.transfersMinor).toBe(-30000);
+    expect(sa.pokerMinor).toBe(15000);
+    expect(sa.incomeMinor).toBe(1500);
+    expect(sa.expensesMinor).toBe(-2500);
+    for (const s of [sa, sb]) {
+      const movements = s.depositsMinor + s.withdrawalsMinor + s.transfersMinor + s.pokerMinor + s.incomeMinor + s.expensesMinor + s.adjustmentsMinor;
+      expect(s.openingMinor + movements).toBe(s.closingMinor);
+    }
+    expect(sa.closingMinor).toBe(accountBalances(ds, undefined, "2026-03-31").get(a.id));
+    expect(sb.closingMinor).toBe(30000);
+    // Transfers net to zero across accounts.
+    expect(sa.transfersMinor + sb.transfersMinor).toBe(0);
+  });
+
+  it("an unbounded range starts from zero and ends at the current balance", () => {
+    const a = account({ openingBalanceMinor: 100000 });
+    const ds = dataset({ accounts: [a], transactions: [txn({ accountId: a.id, type: "deposit", amountMinor: 5000 })] });
+    const [s] = accountStatements(ds, { from: null, to: null });
+    expect(s.openingMinor).toBe(0);
+    expect(s.depositsMinor).toBe(105000);
+    expect(s.closingMinor).toBe(accountBalances(ds).get(a.id));
   });
 });

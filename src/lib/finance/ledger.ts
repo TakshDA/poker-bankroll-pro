@@ -303,3 +303,72 @@ export function drawdown(series: { date: string; value: Minor }[], startValue: M
   }
   return { peakMinor: peak, peakDate, maxDrawdownMinor: maxDd, maxDrawdownFrom: ddFrom, maxDrawdownTo: ddTo, currentDrawdownMinor: current };
 }
+
+export interface AccountStatement {
+  accountId: string;
+  currency: string;
+  /** Balance at the end of the day before the period (0 before the account existed). */
+  openingMinor: Minor;
+  depositsMinor: Minor; // deposits + opening balances dated inside the period
+  withdrawalsMinor: Minor; // negative
+  transfersMinor: Minor; // net transfers in − out
+  pokerMinor: Minor; // cash + tournament results
+  incomeMinor: Minor; // standalone bonus + rakeback
+  expensesMinor: Minor; // negative
+  adjustmentsMinor: Minor;
+  closingMinor: Minor;
+}
+
+/**
+ * Per-account statement for a period, in each account's own currency.
+ * opening + deposits + withdrawals + transfers + poker + income + expenses
+ * + adjustments = closing, exactly, because every term comes from the same
+ * ledger entries the balance is built from.
+ */
+export function accountStatements(ds: Dataset, range: { from: string | null; to: string | null }, ledger = buildLedger(ds)): AccountStatement[] {
+  const rows = new Map<string, AccountStatement>(
+    ds.accounts.map((a) => [
+      a.id,
+      { accountId: a.id, currency: a.currency, openingMinor: 0, depositsMinor: 0, withdrawalsMinor: 0, transfersMinor: 0, pokerMinor: 0, incomeMinor: 0, expensesMinor: 0, adjustmentsMinor: 0, closingMinor: 0 },
+    ]),
+  );
+  for (const e of ledger) {
+    const row = rows.get(e.accountId);
+    if (!row) continue;
+    if (range.to && e.date > range.to) continue;
+    row.closingMinor += e.amountMinor;
+    if (range.from && e.date < range.from) {
+      row.openingMinor += e.amountMinor;
+      continue;
+    }
+    switch (e.kind) {
+      case "opening":
+      case "deposit":
+        row.depositsMinor += e.amountMinor;
+        break;
+      case "withdrawal":
+        row.withdrawalsMinor += e.amountMinor;
+        break;
+      case "transfer_in":
+      case "transfer_out":
+        row.transfersMinor += e.amountMinor;
+        break;
+      case "cash_result":
+      case "tournament_result":
+        row.pokerMinor += e.amountMinor;
+        break;
+      case "bonus":
+      case "rakeback":
+        row.incomeMinor += e.amountMinor;
+        break;
+      case "expense":
+        row.expensesMinor += e.amountMinor;
+        break;
+      case "adjustment":
+        row.adjustmentsMinor += e.amountMinor;
+        break;
+    }
+  }
+  for (const r of rows.values()) assertMinor(r.closingMinor, "closing balance");
+  return [...rows.values()];
+}

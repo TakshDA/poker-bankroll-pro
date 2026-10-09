@@ -78,7 +78,7 @@ export default async function TournamentsPage({ searchParams }: PageProps<"/tour
         actions={
           <>
             <RangePicker current={range} />
-            <ExportMenu entity="tournaments" />
+            <ExportMenu entity="tournaments" range={range} />
             <Button asChild>
               <Link href="/tournaments/new">
                 <Plus /> Tournament

@@ -11,15 +11,17 @@ const FORMATS = [
   { format: "json", label: "JSON" },
 ];
 
-/** Download menu for a list page. Carries the page's date/account filters. */
-export function ExportMenu({ entity }: { entity: string }) {
+/**
+ * Download menu for a list page. Carries the page's date/account filters;
+ * pages that resolve a range preset ("this month") pass the resolved dates.
+ */
+export function ExportMenu({ entity, range }: { entity: string; range?: { from: string | null; to: string | null } }) {
   const params = useSearchParams();
   const href = (format: string) => {
     const q = new URLSearchParams({ entity, format });
-    for (const k of ["from", "to", "account"]) {
-      const v = params.get(k);
-      if (v) q.set(k, v);
-    }
+    const values: Record<string, string | null> = { from: params.get("from"), to: params.get("to"), account: params.get("account") };
+    if (range) Object.assign(values, { from: range.from, to: range.to });
+    for (const [k, v] of Object.entries(values)) if (v) q.set(k, v);
     return `/api/export?${q}`;
   };
   return (
