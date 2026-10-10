@@ -1,10 +1,10 @@
 # Poker Bankroll Pro
 
-A private, single-user bankroll tracker for live and online poker: cash sessions, tournaments, multiple bankroll accounts, expenses, analytics, a calendar and exports.
+A bankroll tracker for live and online poker: cash sessions, tournaments, multiple bankroll accounts, expenses, analytics, a calendar and exports.
 
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind · PostgreSQL with row-level security (Supabase-compatible) · Recharts · Zod · Vitest.
 
-> **Status:** work in progress, built in phases. See the [implementation checklist](#implementation-checklist) for what exists and what does not yet. Nothing has been connected to a remote Supabase project; everything below has been run against a local PostgreSQL only.
+> **Status:** work in progress, built in phases. See the [implementation checklist](#implementation-checklist) for what exists and what does not yet.
 
 ## Local development
 
@@ -33,6 +33,25 @@ pnpm db:seed-demo                   # demo@example.com / demo-password-123
 - Public sign-up is off (`ALLOW_SIGNUP=false`); create the owner with `pnpm user:create`.
 - No secret is exposed to the browser: only `NEXT_PUBLIC_*` variables reach the client, and the app needs none of them with local auth.
 
+## Deploying (Vercel + Supabase)
+
+1. Create a Supabase project. In **SQL Editor**, paste and run [`supabase/setup.sql`](supabase/setup.sql) once (regenerate it with `pnpm db:setup-sql` after adding migrations). Check that a private Storage bucket named `attachments` exists.
+2. Import the GitHub repo into Vercel and set these environment variables before the first deploy (`NEXT_PUBLIC_*` values are built into the app, so changing them needs a redeploy):
+
+   | Variable | Value |
+   |---|---|
+   | `AUTH_PROVIDER` | `supabase` |
+   | `ALLOW_SIGNUP` | `true` to let anyone register (each user sees only their own data) |
+   | `STORAGE_PROVIDER` | `supabase` |
+   | `DATABASE_URL` | Supabase transaction-pooler URI (port 6543) |
+   | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Project URL and anon/publishable key |
+   | `SUPABASE_SERVICE_ROLE_KEY` | service_role/secret key (server only; used for private file storage) |
+
+3. In Supabase **Authentication → URL Configuration**, set the Site URL to your Vercel URL and add `https://<your-app>.vercel.app/**` to Redirect URLs, so confirmation and password-reset emails link back to the app.
+4. Supabase's built-in email sender is rate-limited and meant for testing; configure custom SMTP under Authentication → Emails before inviting many users.
+
+How sign-in works with Supabase: new users confirm their email (`/auth/confirm` handles the link), "Forgot your password?" emails a reset link that opens `/reset-password`, and `src/proxy.ts` refreshes the session cookies. The app still queries Postgres as the `authenticated` role with the user's id, so the same RLS policies apply.
+
 ## Tests
 
 ```bash
@@ -57,7 +76,8 @@ pnpm test               # both
 Done and tested (unit/integration tests and/or browser runs against local Postgres):
 
 - [x] Schema, migrations, foreign keys, constraints, RLS on every table, audit trail, soft delete
-- [x] Local password auth, rate-limited sign-in, no public registration
+- [x] Local password auth, rate-limited sign-in
+- [x] Supabase Auth: open sign-up with email confirmation, password reset, session refresh (tested against a local Supabase Postgres + GoTrue stack, not yet against the hosted project)
 - [x] Bankroll accounts, deposits/withdrawals, transfers (incl. cross-currency), thresholds and goals per account
 - [x] Cash sessions: create, edit, duplicate, delete, sessions crossing midnight, currencies, drafts
 - [x] Tournaments: multiple entries/re-entries, multi-day periods, bounties, ROI/ITM
@@ -76,5 +96,5 @@ Not done yet:
 - [ ] Restore from a JSON backup; `pnpm backup` script (`scripts/backup.ts` does not exist yet)
 - [ ] Settings pages (currencies and rates, games, venues, categories, preferences, password change, account deletion UI)
 - [ ] Playwright E2E suite (`pnpm test:e2e` has no tests yet), production build check, security review
-- [ ] Supabase Auth / Storage providers: code paths exist but have **not** been tested against a real Supabase project
+- [ ] Supabase Storage provider for attachments: code exists but has **not** been tested
 - [ ] Deployment and backup documentation

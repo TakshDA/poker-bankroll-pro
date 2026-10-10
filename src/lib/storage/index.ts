@@ -69,7 +69,7 @@ export function getStorage(): Storage {
     if (!e.SUPABASE_SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY is required for Supabase storage");
     storage = new SupabaseStorage(e.SUPABASE_BUCKET);
   } else {
-    storage = new LocalStorage(path.resolve(process.cwd(), e.ATTACHMENTS_DIR));
+    storage = new LocalStorage(path.resolve(/* turbopackIgnore: true */ process.cwd(), e.ATTACHMENTS_DIR));
   }
   return storage;
 }

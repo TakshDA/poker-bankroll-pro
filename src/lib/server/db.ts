@@ -25,7 +25,8 @@ const bigintAsNumber = {
 
 export function createSql(url: string): Sql {
   return postgres(url, {
-    max: 10,
+    // Serverless (Vercel) runs many small instances; keep each pool small.
+    max: process.env.VERCEL ? 2 : 10,
     idle_timeout: 20,
     // Transaction-mode poolers (Supabase :6543) do not support prepared statements.
     prepare: !url.includes(":6543"),
