@@ -15,7 +15,8 @@
     "db:migrate": "tsx scripts/db-migrate.ts",
     "db:seed-demo": "tsx --conditions=react-server scripts/seed-demo.ts",
     "user:create": "tsx --conditions=react-server scripts/create-user.ts",
-    "backup": "tsx --conditions=react-server scripts/backup.ts"
+    "backup": "tsx --conditions=react-server scripts/backup.ts",
+    "db:setup-sql": "tsx scripts/build-setup-sql.ts"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
