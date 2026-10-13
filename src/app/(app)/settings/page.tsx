@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeftRight, ChevronRight, ListChecks, Trash2 } from "lucide-react";
+import { ArrowLeftRight, ChevronRight, FileUp, ListChecks, Trash2 } from "lucide-react";
 import { cookies } from "next/headers";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,7 @@ export const metadata = { title: "Settings" };
 const LINKS = [
   { href: "/settings/currencies", icon: ArrowLeftRight, title: "Currencies & exchange rates", text: "Rates used to add up amounts in different currencies" },
   { href: "/settings/lists", icon: ListChecks, title: "Venues, sites, games & stakes", text: "Rename, archive or remove the choices in your forms" },
+  { href: "/settings/import", icon: FileUp, title: "Import from CSV", text: "Bring in sessions, tournaments, expenses or transactions" },
   { href: "/settings/trash", icon: Trash2, title: "Trash", text: "Restore or permanently delete removed records" },
 ];
 
