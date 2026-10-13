@@ -32,8 +32,12 @@ export type PasswordChange = "ok" | "wrong-password" | "rejected";
 export async function changePassword(user: AuthUser, current: string, next: string): Promise<PasswordChange> {
   if (env().AUTH_PROVIDER === "supabase") {
     if (!(await checkPassword(user, current))) return "wrong-password";
-    const { error } = await (await supabaseServerClient()).auth.updateUser({ password: next });
-    return error ? "rejected" : "ok";
+    const supabase = await supabaseServerClient();
+    const { error } = await supabase.auth.updateUser({ password: next });
+    if (error) return "rejected";
+    // A stolen session must not outlive the change; this device stays signed in.
+    await supabase.auth.signOut({ scope: "others" }).catch(() => {});
+    return "ok";
   }
   return (await changeLocalPassword(sql(), user.id, current, next)) ? "ok" : "wrong-password";
 }

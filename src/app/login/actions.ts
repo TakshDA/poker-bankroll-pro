@@ -55,6 +55,8 @@ const signupSchema = credentials.extend({
 
 /** Absolute origin of this request, for links in confirmation emails. */
 async function origin(): Promise<string> {
+  const site = env().SITE_URL;
+  if (site) return site.replace(/\/+$/, "");
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
   const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
@@ -131,6 +133,11 @@ export async function updatePassword(_prev: ActionState, formData: FormData): Pr
   if (!parsed.success) return { ok: false, ts: Date.now(), message: parsed.error.issues[0]?.message ?? "Invalid input" };
   if (env().AUTH_PROVIDER !== "supabase") return { ok: false, ts: Date.now(), message: "Use Settings to change your password." };
   const supabase = await supabaseServerClient();
+  // Without the current password, only a session that came from a reset link in the last hour may set one.
+  const { data } = await supabase.auth.getClaims();
+  const amr = (data?.claims?.amr ?? []) as ({ method: string; timestamp: number } | string)[];
+  const recovered = amr.some((e) => (typeof e === "string" ? e === "recovery" : e.method === "recovery" && Date.now() / 1000 - e.timestamp < 3600));
+  if (!recovered) return { ok: false, ts: Date.now(), message: "This reset link has expired. Request a new one, or change your password in Settings." };
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) return { ok: false, ts: Date.now(), message: error.code === "same_password" ? "Choose a password you have not used here before." : "Could not update the password. Request a new link." };
   redirect("/?passwordUpdated=1");

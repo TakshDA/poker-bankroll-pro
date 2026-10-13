@@ -71,6 +71,13 @@ describe("cell normalisation", () => {
     expect(cleanMoneyCell("12abc3")).toBeNull();
     expect(cleanMoneyCell("1.2.3")).toBeNull();
   });
+  it("refuses huge cells quickly instead of scanning them", () => {
+    const t = Date.now();
+    expect(cleanMoneyCell("1".repeat(4000))).toBeNull();
+    expect(parseStakesCell("1".repeat(4000))).toBeNull();
+    expect(parseDateCell(`1${" ".repeat(4000)}!`, "mdy")).toBeNull();
+    expect(Date.now() - t).toBeLessThan(50);
+  });
   it("reads stakes", () => {
     expect(parseStakesCell("NL $1/$2")).toEqual({ smallBlind: "1", bigBlind: "2" });
     expect(parseStakesCell("0.25/0.50")).toEqual({ smallBlind: "0.25", bigBlind: "0.50" });

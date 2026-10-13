@@ -5,9 +5,10 @@ import { env } from "@/lib/server/env";
 
 const OTP_TYPES = new Set<EmailOtpType>(["signup", "invite", "magiclink", "recovery", "email_change", "email"]);
 
-/** Only same-site relative paths, so the link can't bounce users to another site. */
+/** A fixed list of destinations, so an emailed link can never bounce users to another site. */
+const NEXT_PATHS = new Set(["/", "/reset-password"]);
 function safeNext(next: string | null): string {
-  return next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/";
+  return next && NEXT_PATHS.has(next) ? next : "/";
 }
 
 /**

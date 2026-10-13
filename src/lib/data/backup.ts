@@ -152,6 +152,14 @@ export async function restoreBackup(tx: Tx, backup: Backup): Promise<RestoreSumm
 
   const settings = backup.tables.user_settings?.[0];
   if (settings) {
+    // The app reads the time zone on every page; refuse one it cannot use.
+    if (settings.timezone !== undefined) {
+      try {
+        new Intl.DateTimeFormat("en", { timeZone: String(settings.timezone) });
+      } catch {
+        throw new BackupFileError("The backup's time zone setting is not valid.");
+      }
+    }
     const s = remap("user_settings", settings);
     const cols = Object.keys(s).filter((c) => !["user_id", "created_at", "updated_at"].includes(c));
     if (cols.length) {

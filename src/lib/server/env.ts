@@ -15,6 +15,8 @@ const schema = z.object({
   ATTACHMENTS_DIR: z.string().default(".data/attachments"),
   SUPABASE_BUCKET: z.string().default("attachments"),
   NODE_ENV: z.string().default("development"),
+  /** Public URL used in emailed links, e.g. https://poker-bankroll-pro.vercel.app. Falls back to the request host. */
+  SITE_URL: z.url().optional(),
 });
 
 export type Env = z.infer<typeof schema>;

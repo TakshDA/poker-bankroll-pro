@@ -3,6 +3,10 @@
  * schemas accept. Each function returns null when the cell cannot be read, so
  * the caller can report which column was wrong. Pure (browser and server).
  */
+/** Cells longer than this are never a date, time, amount or stake; refusing them keeps matching cheap. */
+const MAX_CELL = 64;
+const tooLong = (cell: string) => cell.length > MAX_CELL;
+
 export type DateOrder = "ymd" | "mdy" | "dmy";
 export type DecimalMark = "." | ",";
 
@@ -21,12 +25,14 @@ function validYmd(y: number, m: number, d: number): string | null {
 
 /** Split "2026-10-09 19:30" or "2026-10-09T19:30:00" into date and time parts. */
 export function splitDateTime(cell: string): { date: string; time: string | null } {
+  if (tooLong(cell)) return { date: cell, time: null };
   const s = cell.trim();
   const m = /^(.+?)[T\s]+(\d{1,2}:\d{2}(?::\d{2})?\s*(?:[ap]\.?m\.?)?)$/i.exec(s);
   return m ? { date: m[1], time: m[2] } : { date: s, time: null };
 }
 
 export function parseDateCell(cell: string, order: DateOrder): string | null {
+  if (tooLong(cell)) return null;
   const s = splitDateTime(cell).date.replace(/,/g, " ").trim();
   if (!s) return null;
   let m = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/.exec(s);
@@ -49,6 +55,7 @@ export function parseDateCell(cell: string, order: DateOrder): string | null {
 
 /** "19:30", "7:30 PM", "7pm", "19:30:00" -> "19:30". */
 export function parseTimeCell(cell: string): string | null {
+  if (tooLong(cell)) return null;
   const s = cell.trim().toLowerCase().replace(/\./g, "");
   const m = /^(\d{1,2})(?::(\d{2}))?(?::\d{2})?\s*(am|pm)?$/.exec(s);
   if (!m) return null;
@@ -66,6 +73,7 @@ export function parseTimeCell(cell: string): string | null {
 
 /** Hours played: "4.5", "4,5" (comma mark), "4:30", "4h30", "270m". Returns minutes. */
 export function parseDurationCell(cell: string, mark: DecimalMark = "."): number | null {
+  if (tooLong(cell)) return null;
   const s = cell.trim().toLowerCase();
   if (!s) return null;
   let m = /^(\d{1,3}):(\d{2})$/.exec(s);
@@ -83,6 +91,7 @@ export function parseDurationCell(cell: string, mark: DecimalMark = "."): number
  * decimal string like "1234.50" or "-45". Null when it is not a number.
  */
 export function cleanMoneyCell(cell: string, mark: DecimalMark = "."): string | null {
+  if (tooLong(cell)) return null;
   let s = cell.trim().replace(/[\s ']/g, "");
   if (!s) return null;
   let negative = false;
@@ -104,6 +113,7 @@ export function cleanMoneyCell(cell: string, mark: DecimalMark = "."): string | 
 
 /** "1/2", "$0.25/$0.50", "NL 1/2" -> small and big blind decimal strings. */
 export function parseStakesCell(cell: string, mark: DecimalMark = "."): { smallBlind: string; bigBlind: string } | null {
+  if (tooLong(cell)) return null;
   const m = /([\d.,]+)\s*\/\s*\D{0,3}([\d.,]+)/.exec(cell.replace(/[$€£¥]/g, ""));
   if (!m) return null;
   const sb = cleanMoneyCell(m[1], mark);
@@ -117,6 +127,7 @@ export function parseBoolCell(cell: string): boolean {
 
 /** Integer cells such as "1,234" or "12". */
 export function parseIntCell(cell: string): string | null {
+  if (tooLong(cell)) return null;
   const s = cell.trim().replace(/[,\s]/g, "");
   if (!s) return null;
   return /^\d+$/.test(s) ? String(Number(s)) : null;
