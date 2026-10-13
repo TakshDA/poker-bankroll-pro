@@ -12,6 +12,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // The browser test suite runs its own dev server next to `pnpm dev`.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   experimental: {
     // CSV imports and gzipped backup restores (Vercel caps request bodies at 4.5 MB).
     serverActions: { bodySizeLimit: "4mb" },
