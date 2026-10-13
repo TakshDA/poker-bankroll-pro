@@ -11,6 +11,8 @@ export const metadata = { title: "Sign in" };
 const NOTICES: Record<string, { tone: "positive" | "warning"; text: string }> = {
   "confirmed-sign-in": { tone: "positive", text: "If you just confirmed your email, sign in to continue." },
   "reset-other-browser": { tone: "warning", text: "Open the reset link in the same browser you requested it from, or request a new one." },
+  "account-deleted": { tone: "positive", text: "Your account and all of its data have been deleted." },
+  "password-changed": { tone: "positive", text: "Password changed. Sign in with your new password." },
   "link-invalid": { tone: "warning", text: "That link is invalid or has expired. Sign in, or request a new link." },
 };
 

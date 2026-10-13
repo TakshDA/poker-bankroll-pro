@@ -1,6 +1,6 @@
 "use client";
 import { Monitor, Moon, Sun } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { THEME_COOKIE, type Theme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -10,16 +10,24 @@ const OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: "system", label: "Device", icon: Monitor },
 ];
 
+const EVENT = "pbp-theme";
+
 function applyTheme(t: Theme) {
   document.documentElement.dataset.theme = t;
   document.cookie = `${THEME_COOKIE}=${t}; path=/; max-age=31536000; samesite=lax`;
+  window.dispatchEvent(new CustomEvent<Theme>(EVENT, { detail: t }));
 }
 
 /** Light / dark / match-device switch. Applies instantly and remembers the choice for a year. */
 export function ThemeSwitch({ initial, className }: { initial: Theme; className?: string }) {
   const [theme, setTheme] = useState(initial);
+  // Keep every switch on the page (sidebar, settings) in sync.
+  useEffect(() => {
+    const on = (e: Event) => setTheme((e as CustomEvent<Theme>).detail);
+    window.addEventListener(EVENT, on);
+    return () => window.removeEventListener(EVENT, on);
+  }, []);
   const choose = (t: Theme) => {
-    setTheme(t);
     applyTheme(t);
   };
   return (
