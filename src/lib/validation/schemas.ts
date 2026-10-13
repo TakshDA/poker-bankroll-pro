@@ -258,3 +258,13 @@ export const plannedSessionSchema = z.object({
 export type PlannedSessionInput = z.infer<typeof plannedSessionSchema>;
 
 export const noteSchema = z.object({ noteDate: dateString, title: optionalText(160), body: requiredText(8000, "Note") });
+
+const ruleInt = (min: number, max: number, label: string) =>
+  z.coerce.number({ error: `${label} must be a number` }).int(`${label} must be a whole number`).min(min, `${label} must be at least ${min}`).max(max, `${label} must be at most ${max}`);
+export const alertRulesSchema = z.object({
+  cashBuyInsRequired: ruleInt(1, 1000, "Cash buy-ins"),
+  cashBuyInBigBlinds: ruleInt(1, 1000, "Big blinds per buy-in"),
+  tournamentBuyInsRequired: ruleInt(1, 10000, "Tournament buy-ins"),
+  cooldownMinutes: ruleInt(0, 1440, "Cooldown"),
+});
+export type AlertRulesInput = z.infer<typeof alertRulesSchema>;
