@@ -12,6 +12,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    // CSV imports and gzipped backup restores (Vercel caps request bodies at 4.5 MB).
+    serverActions: { bodySizeLimit: "4mb" },
+  },
   serverExternalPackages: ["postgres", "exceljs"],
   turbopack: {
     rules: {
