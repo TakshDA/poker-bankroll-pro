@@ -1,4 +1,6 @@
 "use client";
+import { ThemeSwitch } from "@/components/theme-switch";
+import type { Theme } from "@/lib/theme";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut, Spade } from "lucide-react";
@@ -10,7 +12,7 @@ export function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function Sidebar({ email, signOut, alertCount }: { email: string; signOut: () => Promise<void>; alertCount: number }) {
+export function Sidebar({ email, signOut, alertCount, theme }: { email: string; signOut: () => Promise<void>; alertCount: number; theme: Theme }) {
   const pathname = usePathname();
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-surface lg:flex">
@@ -62,6 +64,7 @@ export function Sidebar({ email, signOut, alertCount }: { email: string; signOut
         <p className="truncate px-2 text-xs text-fg-subtle" title={email}>
           {email}
         </p>
+        <ThemeSwitch initial={theme} className="mt-2" />
         <form action={signOut}>
           <button type="submit" className="mt-1 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-fg-muted hover:bg-surface-2 hover:text-fg">
             <LogOut className="size-4" /> Sign out

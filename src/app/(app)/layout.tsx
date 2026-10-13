@@ -6,16 +6,19 @@ import { BellRing } from "lucide-react";
 import { getAlerts } from "@/lib/server/alerts";
 import { getWorkspace } from "@/lib/server/workspace";
 import { dueReminders } from "@/lib/finance/reminders";
+import { cookies } from "next/headers";
+import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { signOut } from "../login/actions";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser();
   const [alerts, ws] = await Promise.all([getAlerts(), getWorkspace()]);
   const reminders = dueReminders(ws.planned, ws.settings.timezone);
+  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
   const alertCount = alerts.filter((a) => a.severity !== "info").length;
   return (
     <div className="min-h-dvh">
-      <Sidebar email={user.email} signOut={signOut} alertCount={alertCount} />
+      <Sidebar email={user.email} signOut={signOut} alertCount={alertCount} theme={theme} />
       <MobileTopBar />
       <div className="lg:pl-60">
         <main className="mx-auto w-full max-w-7xl px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pb-12 lg:pt-8">
@@ -35,7 +38,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           {children}
         </main>
       </div>
-      <MobileNav email={user.email} signOut={signOut} alertCount={alertCount} />
+      <MobileNav email={user.email} signOut={signOut} alertCount={alertCount} theme={theme} />
     </div>
   );
 }

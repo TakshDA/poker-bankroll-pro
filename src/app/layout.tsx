@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -15,14 +16,17 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#07080a",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f5f6" },
+    { media: "(prefers-color-scheme: dark)", color: "#07080a" },
+  ],
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const theme = (await cookies()).get("pbp_theme")?.value === "light" ? "light" : "dark";
+  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
   return (
     <html lang="en" data-theme={theme} className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full">

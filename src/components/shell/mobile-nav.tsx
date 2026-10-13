@@ -1,4 +1,6 @@
 "use client";
+import { ThemeSwitch } from "@/components/theme-switch";
+import type { Theme } from "@/lib/theme";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -20,7 +22,7 @@ export function MobileTopBar({ title }: { title?: string }) {
   );
 }
 
-export function MobileNav({ email, signOut, alertCount }: { email: string; signOut: () => Promise<void>; alertCount: number }) {
+export function MobileNav({ email, signOut, alertCount, theme }: { email: string; signOut: () => Promise<void>; alertCount: number; theme: Theme }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const tabs = [
@@ -72,6 +74,7 @@ export function MobileNav({ email, signOut, alertCount }: { email: string; signO
               </li>
             ))}
           </ul>
+          <ThemeSwitch initial={theme} className="mt-4" />
           <form action={signOut} className="mt-4">
             <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-lg border border-border py-2.5 text-sm text-fg-muted">
               <LogOut className="size-4" /> Sign out
