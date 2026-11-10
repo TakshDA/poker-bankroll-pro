@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { Toaster } from "sonner";
+import { RecoveryHashForwarder } from "@/components/recovery-hash-forwarder";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import "./globals.css";
@@ -30,6 +31,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" data-theme={theme} className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full">
+        <RecoveryHashForwarder />
         <TooltipProvider>{children}</TooltipProvider>
         <Toaster theme={theme} position="top-center" richColors closeButton />
       </body>
