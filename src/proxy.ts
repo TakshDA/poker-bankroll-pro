@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 /** Pages anyone may open without signing in. */
-const PUBLIC_PATHS = ["/login", "/forgot-password", "/auth/confirm"];
+const PUBLIC_PATHS = ["/login", "/forgot-password", "/auth/confirm", "/auth/recovery"];
 
 /**
  * Optimistic gate: send visitors without a session to /login, and (with

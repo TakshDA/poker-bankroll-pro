@@ -1,6 +1,7 @@
 "use server";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { clearSessionCookie, getCurrentUser, SESSION_COOKIE, setSessionCookie, supabaseServerClient } from "@/lib/auth";
 import { authenticateLocal, countLocalUsers, createLocalSession, createLocalUser, revokeLocalSession } from "@/lib/auth/local-store";
@@ -113,8 +114,14 @@ export async function requestPasswordReset(_prev: ActionState, formData: FormDat
   const key = await clientKey(`reset:${parsed.data}`);
   if (isRateLimited(key)) return { ok: false, ts: Date.now(), message: "Too many attempts. Try again in 15 minutes." };
   recordFailure(key);
-  const supabase = await supabaseServerClient();
-  await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo: `${await origin()}/auth/confirm?next=/reset-password` });
+  // Implicit flow: the emailed link carries the session itself (after `#`), so it
+  // works in any browser. The default PKCE link only works in the browser that
+  // asked for it, and the email template can't be changed without custom SMTP.
+  const e = env();
+  const supabase = createClient(e.NEXT_PUBLIC_SUPABASE_URL!, e.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    auth: { flowType: "implicit", persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+  await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo: `${await origin()}/auth/recovery` });
   return { ok: true, ts: Date.now(), message: `If an account exists for ${parsed.data}, a reset link is on its way.` };
 }
 
@@ -133,10 +140,13 @@ export async function updatePassword(_prev: ActionState, formData: FormData): Pr
   if (!parsed.success) return { ok: false, ts: Date.now(), message: parsed.error.issues[0]?.message ?? "Invalid input" };
   if (env().AUTH_PROVIDER !== "supabase") return { ok: false, ts: Date.now(), message: "Use Settings to change your password." };
   const supabase = await supabaseServerClient();
-  // Without the current password, only a session that came from a reset link in the last hour may set one.
+  // Without the current password, only a session from an emailed link in the last
+  // hour may set one: "recovery" (PKCE reset link) or "otp" (implicit reset link,
+  // which proves control of the inbox just the same). Password sessions may not.
   const { data } = await supabase.auth.getClaims();
   const amr = (data?.claims?.amr ?? []) as ({ method: string; timestamp: number } | string)[];
-  const recovered = amr.some((e) => (typeof e === "string" ? e === "recovery" : e.method === "recovery" && Date.now() / 1000 - e.timestamp < 3600));
+  const viaEmail = (m: string) => m === "recovery" || m === "otp";
+  const recovered = amr.some((e) => (typeof e === "string" ? viaEmail(e) : viaEmail(e.method) && Date.now() / 1000 - e.timestamp < 3600));
   if (!recovered) return { ok: false, ts: Date.now(), message: "This reset link has expired. Request a new one, or change your password in Settings." };
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) return { ok: false, ts: Date.now(), message: error.code === "same_password" ? "Choose a password you have not used here before." : "Could not update the password. Request a new link." };
